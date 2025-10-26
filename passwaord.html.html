@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Password Strength + Hash</title>
+<style>
+  body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+  input { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 10px; }
+  #strength { font-weight: bold; margin-top: 10px; }
+  button { padding: 8px 16px; font-size: 16px; cursor: pointer; }
+  #hash { word-wrap: break-word; background: #fff; padding: 10px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<h2>Password Strength Test</h2>
+
+<input type="password" id="password" placeholder="Type your password">
+<div id="strength"></div>
+<div id="hash"></div>
+<button id="saveBtn">Save hash to text file</button>
+
+<script>
+const passwordInput = document.getElementById('password');
+const strengthText = document.getElementById('strength');
+const hashText = document.getElementById('hash');
+
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+passwordInput.addEventListener('input', async () => {
+  const pw = passwordInput.value;
+  if (!pw) {
+    strengthText.textContent = '';
+    hashText.textContent = '';
+    return;
+  }
+
+  // simple strength check
+  let strength = 'Weak';
+  if (pw.length >= 8 && /[A-Z]/.test(pw) && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw))
+    strength = 'Strong';
+  else if (pw.length >= 6)
+    strength = 'Medium';
+
+  strengthText.textContent = `Password strength: ${strength}`;
+  const hash = await sha256(pw);
+  hashText.textContent = `SHA-256 hash: ${hash}`;
+});
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const hashValue = hashText.textContent;
+  if (!hashValue) return alert('No hash to save yet!');
+  const blob = new Blob([hashValue + '\n'], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'password_hashes.txt';
+  a.click();
+});
+</script>
+</body>
+</html>
